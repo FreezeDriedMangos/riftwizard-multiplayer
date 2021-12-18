@@ -1,0 +1,1 @@
+ws://riftwizard-matchmaking-server.herokuapp.com/

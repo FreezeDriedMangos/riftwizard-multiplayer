@@ -1,0 +1,77 @@
+Game.buy_upgrade = Game_buy_upgrade
+Game.can_buy_upgrade = Game_can_buy_upgrade
+Game.can_shop = Game_can_shop
+Game.check_triggers = check_triggers
+Game.enter_portal = enter_portal
+Game.get_upgrade_cost = Game_get_upgrade_cost
+Game.has_upgrade = Game_has_upgrade
+Game.is_awaiting_input = Game_is_awaiting_input
+Game.save_game = save_game_wrapper
+Game.try_cast = Game_try_cast
+Game.try_deploy = try_deploy
+Game.try_move = Game_try_move
+Game.try_shop = Game_try_shop
+
+Level.iter_frame = Level_iter_frame
+Level.ItemPickup.on_player_enter = on_player_enter
+Level.Unit.advance = Unit_advance
+
+RiftWizard.KEY_BIND_MAX = KEY_BIND_TOGGLE_SPELL_SELECT_P2
+RiftWizard.KEY_BIND_OPTION_ABORT = RiftWizard.KEY_BIND_MAX + 2
+RiftWizard.KEY_BIND_OPTION_ACCEPT = RiftWizard.KEY_BIND_MAX + 1
+RiftWizard.KEY_BIND_OPTION_RESET = RiftWizard.KEY_BIND_MAX + 3
+RiftWizard.TITLE_SELECTION_BESTIARY += 3
+RiftWizard.TITLE_SELECTION_DISCORD += 3
+RiftWizard.TITLE_SELECTION_EXIT += 3
+RiftWizard.TITLE_SELECTION_MAX += 3
+RiftWizard.TITLE_SELECTION_OPTIONS += 3
+RiftWizard.default_key_binds = {
+RiftWizard.default_key_binds[RiftWizard.KEY_BIND_HELP] = [pygame.K_h, None]
+RiftWizard.key_names = {
+	
+RiftWizard.sp_distribution_strategy = SP_DISTRIBUTION_STRATEGY_HALF_FOR_ALL
+RiftWizard.turn_mode = RiftWizard.turn_mode_from_settings
+RiftWizard.turn_mode_from_settings = TURN_MODE_FAST_PLAYER
+
+RiftWizard.PyGameView.abort_buy = abort_buy
+RiftWizard.PyGameView.abort_cur_spell = abort_cur_spell
+RiftWizard.PyGameView.adjust_char_sheet_selection = adjust_char_sheet_selection
+RiftWizard.PyGameView.autopickup = autopickup
+RiftWizard.PyGameView.cast_cur_spell = cast_cur_spell
+RiftWizard.PyGameView.choose_spell = choose_spell
+RiftWizard.PyGameView.close_shop = close_shop
+RiftWizard.PyGameView.confirm_buy = confirm_buy
+RiftWizard.PyGameView.cycle_tab_targets = cycle_tab_targets
+RiftWizard.PyGameView.deploy = deploy
+RiftWizard.PyGameView.draw_char_sheet = draw_char_sheet
+RiftWizard.PyGameView.draw_character = draw_character
+RiftWizard.PyGameView.draw_key_rebind = draw_key_rebind
+RiftWizard.PyGameView.draw_level = draw_level
+RiftWizard.PyGameView.draw_shop = draw_shop
+RiftWizard.PyGameView.draw_string = draw_string
+RiftWizard.PyGameView.draw_title = draw_title
+RiftWizard.PyGameView.get_repeatable_keys = get_repeatable_keys
+RiftWizard.PyGameView.get_shop_options = get_shop_options
+RiftWizard.PyGameView.get_surface_pos = get_surface_pos
+RiftWizard.PyGameView.key_bind_select_option = key_bind_select_option
+RiftWizard.PyGameView.load_game = load_game
+RiftWizard.PyGameView.new_game = new_game
+RiftWizard.PyGameView.open_buy_prompt = open_buy_prompt
+RiftWizard.PyGameView.open_shop = open_shop
+RiftWizard.PyGameView.process_char_sheet_input = process_char_sheet_input
+RiftWizard.PyGameView.process_click_character = process_click_character
+RiftWizard.PyGameView.process_combat_log_input = process_combat_log_input
+RiftWizard.PyGameView.process_confirm_input = process_confirm_input
+RiftWizard.PyGameView.process_key_rebind = process_key_rebind
+RiftWizard.PyGameView.process_level_input = process_level_input
+RiftWizard.PyGameView.process_shop_input = process_shop_input
+RiftWizard.PyGameView.process_title_input = process_title_input
+RiftWizard.PyGameView.run = run
+RiftWizard.PyGameView.try_buy_shop_selection = try_buy_shop_selection
+RiftWizard.PyGameView.try_move = PyGameView_try_move
+
+
+SteamAdapter.set_presence_level = SteamAdapter_set_presence_level
+SteamAdapter.set_stat = SteamAdapter_set_stat
+SteamAdapter.set_trial_complete = SteamAdapter_set_trial_complete
+SteamAdapter.unlock_bestiary = SteamAdapter_unlock_bestiary
