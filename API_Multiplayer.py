@@ -75,30 +75,6 @@ import SteamAdapter
 
 
 
-
-# -----------------------------------------------------------------------------------------------------------------+
-# try to import API_CharacterSelect from either the mods/ folder or the API_Univerasl/ or API_Multiplayer/ folders |
-# -------------------------------                                                                                  |
-try:                                                 
-	import mods.API_Multiplayer.API_CharacterSelect.API_CharacterSelect as API_CharacterSelect
-except:
-	try:
-		import mods.API_Universal.API_CharacterSelect.API_CharacterSelect as API_CharacterSelect
-	except:
-		try:
-			import mods.API_CharacterSelect.API_CharacterSelect as API_CharacterSelect
-		except:
-			API_CharacterSelect = False                      
-#                                                                                         |
-#                                                                                         |
-# ----------------------------------------------------------------------------------------+
-
-# TODO: make API_CharacterSelect its own api
-# TODO: if API_CharacterSelect, add the multiplayer char select menus
-# TODO: if not API_CharacterSelect, make p2 always Shmerlin
-
-
-
 # ######################################### 
 #
 # Settings
