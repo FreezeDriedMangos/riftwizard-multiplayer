@@ -248,6 +248,28 @@ if True:
 		initialize_option=initialize_sp_distribution_strategy
 	)
 
+	
+	def universal_mana_potion_enabled_string(self, cur_value):
+		if self.game and not self.in_multiplayer_mode:
+			return None
+		return ("Mana Potions: %6s" % ('Shared Effect' if self.options['universal_mana_potion_enabled'] else 'Individual'))
+	def set_universal_mana_potion_enabled(self, new_value):
+		self.options['universal_mana_potion_enabled'] = new_value
+		RiftWizard.universal_mana_potion_enabled = self.options['universal_mana_potion_enabled']
+	def initialize_universal_mana_potion_enabled(self):
+		if not 'universal_mana_potion_enabled' in self.options:
+			self.options['universal_mana_potion_enabled'] = True
+		RiftWizard.universal_mana_potion_enabled = self.options['universal_mana_potion_enabled']
+	Modred.add_option( \
+		universal_mana_potion_enabled_string, \
+		lambda self: self.options['universal_mana_potion_enabled'], \
+		[ True, False ], \
+		'universal_mana_potion_enabled_option', 
+		set_universal_mana_potion_enabled, \
+		option_wraps=True, \
+		initialize_option=initialize_universal_mana_potion_enabled
+	)
+
 	Modred.add_blank_option_line()
 # except Exception as e:
 # 	print('\tAPI Multiplayer error: settings failed to load')
@@ -266,7 +288,7 @@ class SPDistributionBuff(Buff):
 		Buff.__init__(self)
 		self.name = "SP Distribution"
 		self.owner_triggers[EventOnItemPickup] = self.on_pickup
-		self.stack_type = STACK_INTENSITY
+		self.stack_type = STACK_NONE
 		self.buff_type = BUFF_TYPE_NONE
 		self.starts = starts
 
@@ -306,6 +328,22 @@ class SPDistributionBuff(Buff):
 				self.owner.xp -= 1
 				self.other_player.xp += 1
 
+
+class ShareManaPotionEffectBuff(Buff):
+	def __init__(self, starts, other_player):
+		Buff.__init__(self)
+		self.name = "Share Mana Potions"
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.stack_type = STACK_NONE
+		self.buff_type = BUFF_TYPE_NONE
+		self.starts = starts
+
+		self.other_player = other_player
+
+	def on_cast(self, event):
+		if isinstance(event.spell, Consumables.SpellCouponSpell):
+			for spell in self.other_player.spells:
+				spell.cur_charges = spell.get_stat('max_charges')
 
 
 # ######################################### 
@@ -4430,6 +4468,10 @@ def new_game(self, mutators=None, trial_name=None, seed=None, from_online_code=F
 		
 		self.game.p1.apply_buff(SPDistributionBuff(True, self.game.p2))
 		self.game.p2.apply_buff(SPDistributionBuff(False, self.game.p1))
+
+		if RiftWizard.universal_mana_potion_enabled:
+			self.game.p1.apply_buff(ShareManaPotionEffectBuff(True, self.game.p2))
+			self.game.p2.apply_buff(ShareManaPotionEffectBuff(False, self.game.p1))
 
 		if self.player_characters_add_quirks_functions[self.p1_char_select_index] != None and self.add_character_quirks_p1:
 			self.player_characters_add_quirks_functions[self.p1_char_select_index](self.game.p1)
