@@ -197,6 +197,19 @@ def listen(callback):
 
 import json
 
+def request_lobby_list():
+	class DummyObject:
+		pass
+
+	retval = []
+	for i in range(10):
+		fake_lobby = DummyObject()
+		fake_lobby.name = 'lobby '+str(i)
+		fake_lobby.can_join = i%7//3 == 0
+		retval.append(fake_lobby)
+		
+	return retval
+
 # host_lobby(name, self.game.trial_name, RiftWizard.loaded_mods)
 def host_lobby(lobby_name, trial, mods):
 	message_body = json.dumps({'name': lobby_name, 'trial': trial, 'mods':mods})

@@ -5,13 +5,13 @@ import Spells
 import Upgrades
 
 import mods.API_Multiplayer.Client as Client
-import mods.API_Universal.API_TitleMenus.API_TitleMenus as API_TitleMenus
+import mods.API_Universal.Modred as Modred
 import mods.API_Multiplayer.Chat as Chat
 
 
 # NOTE: the working server is in server_v2
 
-# TODO: networked multiplayer
+# networked multiplayer
 # https://github.com/philippj/SteamworksPy/blob/master/steamworks/interfaces/matchmaking.py
 #
 # p2p architecture
@@ -33,7 +33,8 @@ import mods.API_Multiplayer.Chat as Chat
 
 
 #
-# TODO: send timer (a0Timer) and process it when it's recieved
+# TODO: send timer (t) and process it when it's recieved
+# TODO: handle settings changes (s) midgame
 # TODO: make sure multiplayer works when both players have different settings
 # TODO: test shrines
 # TODO: fix mutators' seeds
@@ -42,13 +43,22 @@ import mods.API_Multiplayer.Chat as Chat
 
 # TODO: add a server connection menu - for inputting server url and port num
 # to run the matchmaking server locally with ngrok - 
-#	first run the server using $ node server.js
+#	first run the server using $ node app.js
 #	then run ngrok using $ ./ngrok.exe tcp 3000
 #
 
-# TODO: consider switching the server to a websocket server, and adding a "middleman" client nodejs server 
-# middleman would be started and closed by the python mod, and all it would do is connect to the python mod's socket
 
+
+# BUG:
+#   if you wait too long, the port closes
+#   online: p2 can't click to set path
+#   mouse deploy is not implemented
+#   online: casting friend's spells crashes game
+#   online: p2 can't hover over p1 with mouse
+#   Tile overlay is SUUUUPER broken, PLUS it needs to be updated to use the new version of get_image
+#   bestiary doesn't open
+
+# TODO: fast player with timer 2: works like regular fast player, but with timer, AND if p1 moved first on a given turn, p1 must wait for half the turn timer to pass to move again (action queuing allowed)
 
 
 ####################################################
@@ -117,10 +127,7 @@ CLAY_IS_DEBUGGING_ONLINE_MULTIPLAYER_ON_HIS_ONE_COMPUTER = True
 
 # try:
 if True:
-	import mods.API_Universal.API_OptionsMenu.API_OptionsMenu as API_OptionsMenu
-
-	
-	API_OptionsMenu.add_tile_option_line('Multiplayer Settings:')
+	Modred.add_tile_option_line('Multiplayer Settings:')
 
 	def turn_mode_string(self, cur_value):
 		if self.game and not self.in_multiplayer_mode:
@@ -150,7 +157,7 @@ if True:
 			self.options['multiplayer_turn_mode'] = TURN_MODE_FAST_PLAYER
 		RiftWizard.turn_mode_from_settings = self.options['multiplayer_turn_mode']
 
-	API_OptionsMenu.add_option( \
+	Modred.add_option( \
 		turn_mode_string, \
 		lambda self: self.options['multiplayer_turn_mode'], \
 		[
@@ -181,7 +188,7 @@ if True:
 			self.options['turn_timer_length'] = 1
 		TURN_TIMER = self.options['turn_timer_length']
 		
-	API_OptionsMenu.add_option( \
+	Modred.add_option( \
 		turn_timer_string, \
 		lambda self: self.options['turn_timer_length'], \
 		[i / 10 for i in range(5, 21)], \
@@ -218,7 +225,7 @@ if True:
 			self.options['sp_distribution_strategy'] = SP_DISTRIBUTION_STRATEGY_HALF_FOR_ALL
 		RiftWizard.sp_distribution_strategy = self.options['sp_distribution_strategy']
 
-	API_OptionsMenu.add_option( \
+	Modred.add_option( \
 		sp_distribution_strategy_string, \
 		lambda self: self.options['sp_distribution_strategy'], \
 		[
@@ -233,7 +240,7 @@ if True:
 		initialize_option=initialize_sp_distribution_strategy
 	)
 
-	API_OptionsMenu.add_blank_option_line()
+	Modred.add_blank_option_line()
 # except Exception as e:
 # 	print('\tAPI Multiplayer error: settings failed to load')
 # 	print(e)
@@ -437,57 +444,132 @@ def try_init_char_select(self):
 
 
 def try_init_online_menu(self):
-	if not hasattr(self, 'online__loby_name'):
-		self.online__loby_name = ''
-		# self.in_lobby_menu = False
+	if not hasattr(self, 'online__lobby_name_input'):
+		self.online__lobby_name_input = Modred.TextInput()
+		# self.online__lobby_name_input.give_focus()
+		self.online__lobby_name_input.font = self.font_large
+		self.online__lobby_name_input.linesize = self.font_large_line_size
+		self.online__lobby_name_input.placeholder_text = "lobby name"
+
+		self.online__waiting_in_lobby = False
+		def on_confirm_callback():
+			if not self.online__waiting_in_lobby:
+				lobby_name = self.online__lobby_name_input.text
+
+				print('connect to ' + lobby_name)
+				if not hasattr(self, 'trial_index_selected'):
+					self.trial_index_selected = -1
+
+				if self.online__is_host:
+					Client.host_lobby(lobby_name, self.trial_index_selected, RiftWizard.loaded_mods)
+				else:
+					Client.join_lobby(lobby_name, RiftWizard.loaded_mods)
+					Client.send_game_ready(2, self.p2_char_select_index, self.add_character_quirks_p2)
+
+				join_button.set_text("Abandon Lobby")
+				Chat.add_chat_message('>>> Now waiting in lobby ' + lobby_name + ". Game will begin when player 2 connects.")
+				self.online__waiting_in_lobby = True
+			else:
+				Client.disconnect()
+
+				join_button.set_text("Create/Join Lobby")
+				self.online__waiting_in_lobby = False
+			
+
+		# self.online__lobby_name_input.confirm_callback = on_confirm_callback
+
+		def menu_draw_text_input(pygameview, draw_pane, x, y):
+			self.online__lobby_name_input.draw(pygameview, self.screen.get_width()//2, y, draw_pane, center=True)
+
+
+
+		menu_width = self.screen.get_width() * 2/3
+		menu_height = self.screen.get_height() * 99/100
+
+		join_button = Modred.row_from_text("Create/Join Lobby", self.font, self.linesize, selectable=True, on_confirm_callback=on_confirm_callback, center=True)
+		headers = [
+			Modred.row_from_text("Enter Lobby Name", self.font_large, self.font_large_line_size, center=True),
+			Modred.row_from_size(menu_width, self.font_large_line_size, custom_draw_function=menu_draw_text_input, selectable=True, on_confirm_callback=self.online__lobby_name_input.give_focus, mouse_content=self.online__lobby_name_input),
+			join_button,
+			Modred.row_from_text(" ", self.font, self.linesize, selectable=False, center=True),
+			
+			Modred.row_from_text("-------------------------------------------", self.font_large, self.font_large_line_size, center=True),
+			Modred.row_from_text("Existing Lobbies", self.font_large, self.font_large_line_size, center=True),
+			Modred.row_from_text("Refresh", self.font, self.linesize, selectable=True, on_confirm_callback=None, center=True)
+		]
+
+		# main_rows = [
+		# 	Modred.row_from_text(lobby.name, color=(255, 255, 255) if lobby.can_join else (50, 50, 50), selectable=True, on_confirm_callback=lambda row: on_confirm_callback(lobby.name))
+		# 	for lobby in Client.request_lobby_list()
+		# ]
+		main_rows = []
+
+		# self.online__lobby_menu = Modred.create_menu(headers, main_rows, screen.height)
+		self.online__lobby_menu = Modred.make_menu_from_rows(main_rows, menu_height, self.font, self.linesize, header_rows=headers, footer_rows=[], add_page_count_footer=True, loopable=True)
+
+
+
+
 
 
 def draw_lobby_menu(self):
 	try_init_online_menu(self)
 
-	char_select_title_string = 'Enter Lobby Name'
-	cur_x = self.screen.get_width()//2 - self.font_large.size(char_select_title_string)[0]//2
-	cur_y = self.screen.get_height()//2
-	self.draw_string(char_select_title_string, self.screen, cur_x, cur_y, font=self.font_large)
+	# char_select_title_string = 'Enter Lobby Name'
+	# cur_x = self.screen.get_width()//2 - self.font_large.size(char_select_title_string)[0]//2
+	# cur_y = self.screen.get_height()//2
+	# self.draw_string(char_select_title_string, self.screen, cur_x, cur_y, font=self.font_large)
 	
-	cur_y += self.font_large_line_size
+	# cur_x = self.screen.get_width()//2
+	# cur_y += self.font_large_line_size
 
-	self.draw_string(self.online__loby_name, self.screen, cur_x, cur_y, font=self.font_large)
+	# self.online__lobby_name_input.draw(self, cur_x, cur_y, self.screen, center=True)
+
+
+	self.online__lobby_menu.draw(self, self.screen, self.screen.get_width()//3, 0)
 
 	Chat.draw_chat_messages(self, self.screen, 5)
+
+
 
 
 def process_lobby_menu_input(self):
 	try_init_online_menu(self)
 
-	for evt in self.events:
-		if evt.type != pygame.KEYDOWN:
-			continue
+	if self.online__lobby_name_input.has_focus:
+		self.online__lobby_name_input.process_input(self, RiftWizard.KEY_BIND_CONFIRM, RiftWizard.KEY_BIND_ABORT)
+	else:
+		# pygameview, up_keys, down_keys, left_keys, right_keys, confirm_keys
+		self.online__lobby_menu.process_input(self, self.key_binds[RiftWizard.KEY_BIND_UP], self.key_binds[RiftWizard.KEY_BIND_DOWN], self.key_binds[RiftWizard.KEY_BIND_LEFT], self.key_binds[RiftWizard.KEY_BIND_RIGHT], self.key_binds[RiftWizard.KEY_BIND_CONFIRM])
+
+	# for evt in self.events:
+	# 	if evt.type != pygame.KEYDOWN:
+	# 		continue
 		
-		# if not self.lobby_name_input_active:
-		# 	break
+	# 	# if not self.lobby_name_input_active:
+	# 	# 	break
 
-		if evt.key in self.key_binds[RiftWizard.KEY_BIND_CONFIRM]:
-			print('connect to ' + self.online__loby_name)
-			if not hasattr(self, 'trial_index_selected'):
-				self.trial_index_selected = -1
+	# 	if evt.key in self.key_binds[RiftWizard.KEY_BIND_CONFIRM]:
+	# 		print('connect to ' + self.online__loby_name)
+	# 		if not hasattr(self, 'trial_index_selected'):
+	# 			self.trial_index_selected = -1
 
-			if self.online__is_host:
-				Client.host_lobby(self.online__loby_name, self.trial_index_selected, RiftWizard.loaded_mods)
-			else:
-				Client.join_lobby(self.online__loby_name, RiftWizard.loaded_mods)
-				Client.send_game_ready(2, self.p2_char_select_index, self.add_character_quirks_p2)
+	# 		if self.online__is_host:
+	# 			Client.host_lobby(self.online__loby_name, self.trial_index_selected, RiftWizard.loaded_mods)
+	# 		else:
+	# 			Client.join_lobby(self.online__loby_name, RiftWizard.loaded_mods)
+	# 			Client.send_game_ready(2, self.p2_char_select_index, self.add_character_quirks_p2)
 		
-		elif evt.key in self.key_binds[RiftWizard.KEY_BIND_ABORT]:
-			Client.disconnect()
-			self.state = RiftWizard.STATE_TITLE
-		elif evt.key == pygame.K_BACKSPACE:
-			self.online__loby_name = self.online__loby_name[:-1]
-		elif hasattr(evt, 'unicode'):
-			self.online__loby_name += evt.unicode
+	# 	elif evt.key in self.key_binds[RiftWizard.KEY_BIND_ABORT]:
+	# 		Client.disconnect()
+	# 		self.state = RiftWizard.STATE_TITLE
+	# 	elif evt.key == pygame.K_BACKSPACE:
+	# 		self.online__loby_name = self.online__loby_name[:-1]
+	# 	elif hasattr(evt, 'unicode'):
+	# 		self.online__loby_name += evt.unicode
 
 
-STATE_LOBBY_MENU = API_TitleMenus.add_menu(draw_lobby_menu, process_lobby_menu_input)
+STATE_LOBBY_MENU = Modred.add_menu(draw_lobby_menu, process_lobby_menu_input)
 
 
 def draw_char_select(self):
@@ -711,13 +793,13 @@ def process_char_select_input(self):
 		self.p2_char_select_index = self.p1_char_select_index
 		
 
-STATE_CHAR_SELECT = API_TitleMenus.add_menu(draw_char_select, process_char_select_input)
+STATE_CHAR_SELECT = Modred.add_menu(draw_char_select, process_char_select_input)
 
 
 
-API_TitleMenus.override_menu_transition(STATE_CHAR_SELECT, RiftWizard.STATE_PICK_MODE, STATE_LOBBY_MENU, lambda pygameview: pygameview.online_mode and not pygameview.online__is_host)
-API_TitleMenus.override_menu_transition(RiftWizard.STATE_PICK_MODE, RiftWizard.STATE_LEVEL, STATE_LOBBY_MENU, lambda pygameview: pygameview.online_mode)
-API_TitleMenus.override_menu_transition(RiftWizard.STATE_PICK_TRIAL, RiftWizard.STATE_LEVEL, STATE_LOBBY_MENU, lambda pygameview: pygameview.online_mode)
+Modred.override_menu_transition(STATE_CHAR_SELECT, RiftWizard.STATE_PICK_MODE, STATE_LOBBY_MENU, lambda pygameview: pygameview.online_mode and not pygameview.online__is_host)
+Modred.override_menu_transition(RiftWizard.STATE_PICK_MODE, RiftWizard.STATE_LEVEL, STATE_LOBBY_MENU, lambda pygameview: pygameview.online_mode)
+Modred.override_menu_transition(RiftWizard.STATE_PICK_TRIAL, RiftWizard.STATE_LEVEL, STATE_LOBBY_MENU, lambda pygameview: pygameview.online_mode)
 
 
 
@@ -899,7 +981,7 @@ def process_title_input(self):
 
 
 # RiftWizard.PyGameView.process_title_input = process_title_input
-API_TitleMenus.override_menu(RiftWizard.STATE_TITLE, draw_title, process_title_input)
+Modred.override_menu(RiftWizard.STATE_TITLE, draw_title, process_title_input)
 
 
 
@@ -1414,6 +1496,24 @@ def update_cast_selection(self, player):
 def handle_cast_selection(self, evt, key_binds_map, player):
 	if evt.type != pygame.KEYDOWN:
 		return
+
+
+	# if event is one of the number keys or the chat key (and we're in online multiplayer mode) exit cast select state and pass the event to handle_event_level
+	instantly_exit_to_state_level = True #False
+	if KEY_BIND_OPEN_CHAT in self.key_binds and evt.key in self.key_binds[KEY_BIND_OPEN_CHAT]:
+		instantly_exit_to_state_level = True
+	for bind in range(key_binds_map[RiftWizard.KEY_BIND_SPELL_1], key_binds_map[RiftWizard.KEY_BIND_SPELL_10]+1):
+		if evt.key in self.key_binds[bind] and not self.game.deploying:
+			instantly_exit_to_state_level = True
+			break
+	if instantly_exit_to_state_level:
+		player.menu__state = RiftWizard.STATE_LEVEL
+		# self.tag_filter.clear()
+		# player.menu__examine_target = None
+		# self.examine_target = None
+		return handle_event_level(self, evt, key_binds_map, player)
+
+
 
 	if evt.key in self.key_binds[key_binds_map[RiftWizard.KEY_BIND_ABORT]] or evt.key in self.key_binds[key_binds_map[KEY_BIND_TOGGLE_SPELL_SELECT]] or (len(player.spells) == 0 and len(player.items) == 0):
 		self.play_sound("menu_confirm")
@@ -2026,7 +2126,8 @@ def handle_mouse_level(self):
 				if self.main_player.cur_spell:
 					self.main_player.cur_spell_target = level_point
 				if self.game.deploying:
-					self.main_player.deploy_target = level_point
+					self.main_player.menu__deploy_target = level_point
+					self.deploy_target = level_point
 
 				self.try_examine_tile(level_point)
 				
@@ -2057,8 +2158,9 @@ def handle_mouse_level(self):
 					self.main_player.cur_spell_target = level_point
 					self.cast_cur_spell(self.main_player)
 				elif self.game.deploying and level_point:
-					if self.game.next_level.is_point_in_bounds(level_point) and not (level_point.x == self.other_player.x and level_point.y == self.other_player.y):
-						player.menu__deploy_target = level_point
+					deploy_overlaps_other_player = self.other_player and (level_point.x == self.other_player.x and level_point.y == self.other_player.y)
+					if self.game.next_level.is_point_in_bounds(level_point) and not deploy_overlaps_other_player:
+						self.main_player.menu__deploy_target = level_point
 						self.deploy_target = level_point
 						self.try_examine_tile(level_point)
 						
@@ -2077,8 +2179,8 @@ def handle_mouse_level(self):
 				if self.main_player.cur_spell:
 					self.abort_cur_spell(self.main_player)
 				if self.game.deploying:
-					player.menu__deploy_target = None
-					player.examine_target = None
+					self.main_player.menu__deploy_target = None
+					self.main_player.examine_target = None
 					self.examine_target = None
 					self.game.try_abort_deploy()
 					self.play_sound("menu_abort")
@@ -2237,11 +2339,20 @@ def get_shop_options(self, player=None):
 		return []
 # RiftWizard.PyGameView.get_shop_options = get_shop_options
 
+
+class DummyObject(object):
+    pass
+
 old_open_shop = RiftWizard.PyGameView.open_shop
 def open_shop(self, shop_type, spell=None, player=None):
 	# if not self.in_multiplayer_mode:
 	# 	return old_open_shop(self, shop_type, spell=spell)
 
+	if player == None:
+		player = DummyObject()
+		player.menu__state = self.state
+		player.menu__examine_target = self.examine_target
+		
 	player.menu__prev_state = player.menu__state
 
 	self.play_sound("menu_confirm")
@@ -2897,6 +3008,9 @@ def deploy(self, p):
 # #########################################
 
 def gameover_condition(self):
+	if not hasattr(self, 'p2'):
+		return self.p1.cur_hp <= 0
+
 	if GAMEOVER_CONDITION == BOTH_PLAYERS:
 		return self.p1.cur_hp <= 0 and self.p2.cur_hp <= 0
 	if GAMEOVER_CONDITION == EITHER_PLAYER:
@@ -3016,12 +3130,12 @@ def get_tile_categories(self, player):
 old_draw_level = RiftWizard.PyGameView.draw_level
 def draw_level(self):
 	old_draw_level(self)
-	
+
 	if self.gameover_frames >= 8:
 		return
 
-	if not self.in_multiplayer_mode:
-		return
+	# if not self.in_multiplayer_mode:
+	# 	return
 
 	#
 	# spell targeting
@@ -3121,7 +3235,7 @@ def draw_level(self):
 # RiftWizard.PyGameView.draw_level = draw_level
 
 
-API_TitleMenus.override_menu(RiftWizard.STATE_LEVEL, draw_level, lambda pygameview: None)
+Modred.override_menu(RiftWizard.STATE_LEVEL, draw_level, lambda pygameview: None)
 		
 
 	
@@ -3225,10 +3339,66 @@ def draw_char_sheet(self):
 #
 # #########################################
 
+def try_init_key_rebind(self):
+	if not hasattr(self, 'key_rebind_menu'):
+		self.key_rebind_rebinding = False
+
+
+		
+		menu_width = self.screen.get_width() * 2/3
+		menu_height = self.screen.get_height() * 99/100
+
+		col_widths = [
+			int(menu_width/3),
+			int(menu_width/3),
+			int(menu_width/3)
+		]
+		self.key_rebind_menu_main_rows = [
+			Modred.make_multirow(
+				Modred.row_from_text("FUNCTION", self.font, self.linesize, selectable=False, width=col_widths[0]),
+				Modred.row_from_text("MAIN KEY", self.font, self.linesize, selectable=False, width=col_widths[1]),
+				Modred.row_from_text("SECONDARY KEY", self.font, self.linesize, selectable=False, width=col_widths[2])
+			),
+			Modred.row_from_text(" ", self.font, self.linesize, selectable=False),
+			Modred.row_from_text(" ", self.font, self.linesize, selectable=False)
+		]
+
+		for (key_bind, name) in RiftWizard.key_names.items():
+			key1, key2 = self.new_key_binds[key_bind]
+			keyname_1 = pygame.key.name(key1) if key1 else "Unbound"
+			keyname_2 = pygame.key.name(key2) if key2 else "Unbound"
+
+			self.key_rebind_menu_main_rows.append(
+				Modred.make_multirow(
+					Modred.row_from_text(name+":", self.font, self.linesize, selectable=False, width=col_widths[0]),
+					Modred.row_from_text(keyname_1+(' '*(10-len(keyname_1))), self.font, self.linesize, selectable=True, width=col_widths[1]),
+					Modred.row_from_text(keyname_2+(' '*(10-len(keyname_2))), self.font, self.linesize, selectable=True, width=col_widths[2]),
+				)
+			)
+		
+		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
+		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
+		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Reset to Default", self.font, self.linesize, selectable=True, width=menu_width))
+		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Reset to Multiplayer Default", self.font, self.linesize, selectable=True, width=menu_width))
+		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Done", self.font, self.linesize, selectable=True, width=menu_width))
+		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
+		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
+
+		# self.key_rebind_menu = Modred.make_menu_from_rows(self.key_rebind_menu_main_rows, menu_height, self.font, self.linesize, header_rows=[], footer_rows=[], add_page_count_footer=False, loopable=False)
+		self.key_rebind_menu = Modred.make_single_page_menu_from_rows(self.key_rebind_menu_main_rows, menu_height)
+
+
 KEY_BIND_OPTION_RESET_MULTIPLAYER = RiftWizard.KEY_BIND_MAX + 4
 
 old_draw_key_rebind = RiftWizard.PyGameView.draw_key_rebind
 def draw_key_rebind(self):
+	try_init_key_rebind(self)
+
+	self.key_rebind_menu.draw(self, self.screen, self.screen.get_width()//6, 0)
+
+	return
+
+
 	cur_x = 0
 	cur_y = 0
 
@@ -3284,6 +3454,16 @@ def process_key_rebind(self):
 	# print(len(self.ui_rects))
 	
 
+	if self.key_rebind_rebinding:
+		# self.online__lobby_name_input.process_input(self, RiftWizard.KEY_BIND_CONFIRM, RiftWizard.KEY_BIND_ABORT)
+		pass
+	else:
+		# pygameview, up_keys, down_keys, left_keys, right_keys, confirm_keys
+		self.key_rebind_menu.process_input(self, self.key_binds[RiftWizard.KEY_BIND_UP], self.key_binds[RiftWizard.KEY_BIND_DOWN], self.key_binds[RiftWizard.KEY_BIND_LEFT], self.key_binds[RiftWizard.KEY_BIND_RIGHT], self.key_binds[RiftWizard.KEY_BIND_CONFIRM])
+
+	return
+
+
 	old_process_key_rebind(self)
 
 	try:
@@ -3318,7 +3498,7 @@ def key_bind_select_option(self, option):
 		self.cur_top_row_of_rebind_controls_menu = 0
 
 # RiftWizard.PyGameView.key_bind_select_option = key_bind_select_option
-API_TitleMenus.override_menu(RiftWizard.STATE_REBIND, draw_key_rebind, process_key_rebind)
+Modred.override_menu(RiftWizard.STATE_REBIND, draw_key_rebind, process_key_rebind)
 
 
 
@@ -4149,7 +4329,6 @@ def init_player(self, player, char_select_index):
 	player.menu__state = RiftWizard.STATE_LEVEL
 	player.menu__examine_target = None 
 	player.menu__cast_selection__index = 0
-	player.menu__cur_spell = None
 	player.menu__shop_page = 0
 	player.menu__abort_to_spell_shop = False
 	player.menu__char_sheet_select_index = 0
@@ -4471,6 +4650,7 @@ def multiplayer_socket_callback(self):
 			print('player disconnected')
 			Chat.add_chat_message('>>> Player disconnected')
 			Client.disconnect()
+			self.examine_target = 0
 			self.state = RiftWizard.STATE_TITLE
 
 		if message_type == 'r':
