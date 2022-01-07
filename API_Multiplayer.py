@@ -3403,66 +3403,12 @@ def draw_key_rebind(self):
 
 	self.key_rebind_menu.draw(self, self.screen, self.screen.get_width()//6, 0)
 
-	return
-
-
-	cur_x = 0
-	cur_y = 0
-
-	col_xs = [100, 400, 700]
-	
-
-	self.draw_string("FUNCTION", self.screen, col_xs[0], cur_y)
-	self.draw_string("MAIN KEY", self.screen, col_xs[1], cur_y)
-	self.draw_string("SECONDARY KEY", self.screen, col_xs[2], cur_y)
-	
-
-	cur_y += self.linesize * 3
-
-
-	if not hasattr(self, 'cur_top_row_of_rebind_controls_menu'):
-		self.cur_top_row_of_rebind_controls_menu = 0
-
-	for bind in range(self.cur_top_row_of_rebind_controls_menu, RiftWizard.KEY_BIND_MAX+1):
-		cur_x = col_xs[0]
-		self.draw_string("%s:" % RiftWizard.key_names[bind], self.screen, cur_x, cur_y)
-
-		
-		key1, key2 = self.new_key_binds[bind]
-		
-		index = 0
-		for k in [key1, key2]:
-			cur_x = col_xs[index + 1]
-			fmt = pygame.key.name(k) if k else "Unbound" 
-			content = [bind, index] if not self.rebinding else None
-			cur_color = (0, 255, 0) if (self.rebinding and self.examine_target == [bind, index]) else (255, 255, 255)
-
-			self.draw_string(fmt, self.screen, cur_x, cur_y, color=cur_color, mouse_content=content, content_width=170)
-			index += 1
-		
-
-		cur_y += self.linesize
-
-	cur_x = col_xs[0]
-	cur_y += self.linesize*2
-
-
-	self.draw_string("Reset to Default", self.screen, cur_x, cur_y, mouse_content=RiftWizard.KEY_BIND_OPTION_RESET if not self.rebinding else None)
-	cur_y += self.linesize
-	self.draw_string("Reset to Multiplayer Default", self.screen, cur_x, cur_y, mouse_content=KEY_BIND_OPTION_RESET_MULTIPLAYER if not self.rebinding else None)
-	cur_y += self.linesize
-	self.draw_string("Done", self.screen, cur_x, cur_y, mouse_content=RiftWizard.KEY_BIND_OPTION_ACCEPT if not self.rebinding else None)
-	
 # RiftWizard.PyGameView.draw_key_rebind = draw_key_rebind
 
 
 old_process_key_rebind = RiftWizard.PyGameView.process_key_rebind
 def process_key_rebind(self):
-	# print(len(self.ui_rects))
-	
-
 	if self.rebinding:
-		# self.online__lobby_name_input.process_input(self, RiftWizard.KEY_BIND_CONFIRM, RiftWizard.KEY_BIND_ABORT)
 		for evt in self.events:
 			if evt.type == pygame.KEYDOWN:
 				if evt.key in self.key_binds[RiftWizard.KEY_BIND_ABORT]:
@@ -3491,27 +3437,6 @@ def process_key_rebind(self):
 	else:
 		# pygameview, up_keys, down_keys, left_keys, right_keys, confirm_keys
 		self.key_rebind_menu.process_input(self, self.key_binds[RiftWizard.KEY_BIND_UP], self.key_binds[RiftWizard.KEY_BIND_DOWN], self.key_binds[RiftWizard.KEY_BIND_LEFT], self.key_binds[RiftWizard.KEY_BIND_RIGHT], self.key_binds[RiftWizard.KEY_BIND_CONFIRM])
-
-	return
-
-
-	old_process_key_rebind(self)
-
-	try:
-		contents = [c for (r, c) in self.ui_rects]
-		cur_index = contents.index(self.examine_target)
-	except:
-		cur_index = None
-		return
-
-	if not hasattr(self, 'cur_top_row_of_rebind_controls_menu'):
-		self.cur_top_row_of_rebind_controls_menu = 0
-
-	row_selected = math.floor(cur_index/2)
-	if row_selected >= 3: #46-3: # and self.cur_top_row_of_rebind_controls_menu < RiftWizard.KEY_BIND_MAX-46:
-		self.cur_top_row_of_rebind_controls_menu += 1
-	elif row_selected <= 1 and self.cur_top_row_of_rebind_controls_menu > 0:
-		self.cur_top_row_of_rebind_controls_menu -= 1
 
 # RiftWizard.PyGameView.process_key_rebind = process_key_rebind
 
