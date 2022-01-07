@@ -67,7 +67,14 @@ import mods.API_Multiplayer.Chat as Chat
 # TODO: fix game crash - deploy when p1 dead
 
 
-# Latest Release: fixed crash caused by right clicking while deploying, fixed rebind menu (it was very buggy and crash-y), added option to have mana potions affect both players when either drinks one, reimplemented cast select, made left menu border green if the player's movement keys will navigate this menu instead of moving the player
+# Latest Release: 
+# fixed crash caused by right clicking while deploying
+# fixed rebind menu (it was very buggy and crash-y)
+# added option to have mana potions affect both players when either drinks one
+# reimplemented cast select
+# made left menu border green if the player's movement keys will navigate this menu instead of moving the player
+# fixed crash when trying to deploy when either player was dead
+# fixed bug causing players' movement input to get dropped
 
 
 ####################################################
@@ -2115,9 +2122,6 @@ def handle_event_chat(self, evt, key_binds_map, player):
 
 
 def handle_any_event(self, evt, key_binds_map, player):
-	if evt.type == pygame.KEYDOWN:
-		print("HANDLE ANY EVENT GOT KEY: " + pygame.key.name(evt.key))
-
 	if player.menu__state == RiftWizard.STATE_LEVEL:
 		if self.online_mode and self.chat_open:
 			return handle_event_chat(self, evt, key_binds_map, player)
@@ -2621,15 +2625,9 @@ def autopickup(self):
 	self.path = full_path
 # RiftWizard.PyGameView.autopickup = autopickup
 
-
-import traceback ## TODO: debug line, remove later
 def handle_event_level(self, evt, key_binds_map, player):
 	if not evt.type == pygame.KEYDOWN:
 		return
-
-	print("HANDLE EVENT LEVEL GOT KEY: " + pygame.key.name(evt.key))
-# TODO: next check - game crash on deploy when p1 dead
-	traceback.print_stack()
 
 
 	# Cancel path on key down
@@ -2794,7 +2792,6 @@ def handle_event_level(self, evt, key_binds_map, player):
 		# if evt.key in self.key_binds[KEY_BIND_MESSAGE_LOG]:
 		# 	self.open_combat_log()
 
-	print(movedir)
 	if movedir:
 		return movedir
 
@@ -2803,8 +2800,6 @@ def handle_move_dir(self, movedir, player, other_player, force_no_repeats=False)
 	if movedir == None: 
 		return
 
-	print('HANDLING MOVE DIR:')
-	print(movedir)
 	keys = pygame.key.get_pressed()
 
 	if movedir:
