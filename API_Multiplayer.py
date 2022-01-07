@@ -3,6 +3,7 @@ from Game import *
 from Level import *
 import Spells
 import Upgrades
+import Consumables
 
 import mods.API_Multiplayer.Client as Client
 import mods.API_Universal.Modred as Modred
