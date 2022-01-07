@@ -3341,8 +3341,15 @@ def draw_char_sheet(self):
 
 def try_init_key_rebind(self):
 	if not hasattr(self, 'key_rebind_menu'):
-		self.key_rebind_rebinding = False
+		self.rebinding = False
 
+
+		def make_callback_for_key_rebind(key_bind, is_primary):
+			def callback():
+				self.rebinding = True
+				self.rebinding_key = [key_bind, 0 if is_primary else 1]
+				pass
+			return callback
 
 		
 		menu_width = self.screen.get_width() * 2/3
@@ -3371,8 +3378,8 @@ def try_init_key_rebind(self):
 			self.key_rebind_menu_main_rows.append(
 				Modred.make_multirow(
 					Modred.row_from_text(name+":", self.font, self.linesize, selectable=False, width=col_widths[0]),
-					Modred.row_from_text(keyname_1+(' '*(10-len(keyname_1))), self.font, self.linesize, selectable=True, width=col_widths[1]),
-					Modred.row_from_text(keyname_2+(' '*(10-len(keyname_2))), self.font, self.linesize, selectable=True, width=col_widths[2]),
+					Modred.row_from_text(keyname_1+(' '*(10-len(keyname_1))), self.font, self.linesize, selectable=True, on_confirm_callback=make_callback_for_key_rebind(key_bind, True), width=col_widths[1]),
+					Modred.row_from_text(keyname_2+(' '*(10-len(keyname_2))), self.font, self.linesize, selectable=True, on_confirm_callback=make_callback_for_key_rebind(key_bind, False), width=col_widths[2]),
 				)
 			)
 		
@@ -3454,9 +3461,33 @@ def process_key_rebind(self):
 	# print(len(self.ui_rects))
 	
 
-	if self.key_rebind_rebinding:
+	if self.rebinding:
 		# self.online__lobby_name_input.process_input(self, RiftWizard.KEY_BIND_CONFIRM, RiftWizard.KEY_BIND_ABORT)
-		pass
+		for evt in self.events:
+			if evt.type == pygame.KEYDOWN:
+				if evt.key in self.key_binds[RiftWizard.KEY_BIND_ABORT]:
+					self.rebinding = False
+					continue
+				
+				key = evt.key
+				if evt.key == pygame.K_BACKSPACE and self.rebinding_key[1] > 0:
+					key = None
+
+				# Check for dual keybinds
+				for f, (k1, k2) in self.new_key_binds.items():
+					if k1 == evt.key:
+						self.new_key_binds[f] = (k2, None)
+					if k2 == evt.key:
+						self.new_key_binds[f] = (k1, None)
+
+				cur_controls = self.new_key_binds[self.rebinding_key[0]]
+				new_control = list(cur_controls)
+				new_control[self.rebinding_key[1]] = key
+				self.new_key_binds[self.rebinding_key[0]] = new_control
+				self.rebinding = False
+
+				rebind_page = self.key_rebind_menu.pages[0]
+				rebind_page.rows[rebind_page.selected_row_index].subrows[rebind_page.selected_subrow_index].set_text(pygame.key.name(key) if key else "Unbound")
 	else:
 		# pygameview, up_keys, down_keys, left_keys, right_keys, confirm_keys
 		self.key_rebind_menu.process_input(self, self.key_binds[RiftWizard.KEY_BIND_UP], self.key_binds[RiftWizard.KEY_BIND_DOWN], self.key_binds[RiftWizard.KEY_BIND_LEFT], self.key_binds[RiftWizard.KEY_BIND_RIGHT], self.key_binds[RiftWizard.KEY_BIND_CONFIRM])
