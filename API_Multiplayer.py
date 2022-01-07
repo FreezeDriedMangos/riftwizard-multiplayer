@@ -52,13 +52,21 @@ import mods.API_Multiplayer.Chat as Chat
 # BUG:
 #   if you wait too long, the port closes
 #   online: p2 can't click to set path
-#   mouse deploy is not implemented
 #   online: casting friend's spells crashes game
 #   online: p2 can't hover over p1 with mouse
 #   Tile overlay is SUUUUPER broken, PLUS it needs to be updated to use the new version of get_image
 #   bestiary doesn't open
 
 # TODO: fast player with timer 2: works like regular fast player, but with timer, AND if p1 moved first on a given turn, p1 must wait for half the turn timer to pass to move again (action queuing allowed)
+
+
+
+# TODO: make SP distribution non-dispellable
+# TODO: add an option for "mana potions restore charges on both players"
+# TODO: fix game crash - deploy when p1 dead
+
+
+# Latest Release: fixed crash caused by right clicking while deploying, fixed rebind menu (it was very buggy and crash-y), added option to have mana potions affect both players when either drinks one, reimplemented cast select, made left menu border green if the player's movement keys will navigate this menu instead of moving the player
 
 
 ####################################################
