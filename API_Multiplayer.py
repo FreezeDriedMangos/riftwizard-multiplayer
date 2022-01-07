@@ -2987,19 +2987,50 @@ def try_deploy(self, x, y, x2=None, y2=None):
 	if (x2 == None): ######################################################################################################################################
 		return old_try_deploy(self, x, y)
 
+	# make sure deploying is possible
 	assert(self.deploying)
 
 	if not self.next_level.can_stand(x, y, self.p1) or not self.next_level.can_stand(x2, y2, self.p2):
 		return False
 
+	# player setup
+	self.p1.Anim = None
+
+	if self.p1.cur_hp > 0:
+		self.cur_level.remove_obj(self.p1)
+		self.next_level.start_pos = Point(x, y)
+		self.next_level.spawn_player(self.p1)
+	self.next_level.player_unit = self.p1
+
 	self.p2.Anim = None
 
-	self.cur_level.remove_obj(self.p2)
-	self.next_level.start_pos = Point(x2, y2)
-	self.next_level.spawn_player(self.p2)
+	if self.p2.cur_hp > 0:
+		self.cur_level.remove_obj(self.p2)
+		self.next_level.start_pos = Point(x2, y2)
+		self.next_level.spawn_player(self.p2)
 	self.next_level.player_unit_2 = self.p2
 
-	return old_try_deploy(self, x, y)
+
+	# other setup (from Game.try_deploy)
+	self.cur_level = self.next_level
+	self.next_level = None
+	self.deploying = False
+
+	self.level_num += 1
+	self.has_granted_xp = False
+	
+	self.cur_level.setup_logging(logdir=self.logdir, level_num=self.level_num)
+
+	import gc
+	gc.collect()
+
+	self.subscribe_mutators()
+	self.save_game()
+
+	if self.cur_level.gen_params:
+		logging.getLogger("Level").debug("\nEntering level %d, id=%d" % (self.level_num, self.cur_level.gen_params.level_id))
+
+	return True
 # Game.try_deploy = try_deploy
 
 
