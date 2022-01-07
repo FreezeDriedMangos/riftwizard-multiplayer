@@ -3343,13 +3343,40 @@ def try_init_key_rebind(self):
 	if not hasattr(self, 'key_rebind_menu'):
 		self.rebinding = False
 
+		rows_by_keybind = dict()
+		def reset_keybind_names():
+			keybinds = list(RiftWizard.key_names.keys())
 
+			for keybind in keybinds:
+				row = rows_by_keybind[keybind]
+				if keybind in self.new_key_binds:
+					key1 = self.new_key_binds[keybind][0]
+					key2 = self.new_key_binds[keybind][1]
+					
+					keyname_1 = pygame.key.name(key1) if key1 else "Unbound"
+					keyname_2 = pygame.key.name(key2) if key2 else "Unbound"
+
+					row.subrows[1].set_text(keyname_1)
+					row.subrows[2].set_text(keyname_2)
+			
 		def make_callback_for_key_rebind(key_bind, is_primary):
 			def callback():
 				self.rebinding = True
 				self.rebinding_key = [key_bind, 0 if is_primary else 1]
 				pass
 			return callback
+		def reset_keybinds_to_default():
+			self.play_sound("menu_confirm")
+			self.new_key_binds = dict(RiftWizard.default_key_binds)
+			reset_keybind_names()
+		def reset_keybinds_to_multiplayer_default():
+			self.play_sound("menu_confirm")
+			self.new_key_binds = dict(default_key_binds_multiplayer_scheme)
+			reset_keybind_names()
+		def leave_key_rebind_screen():
+			self.play_sound("menu_confirm")
+			self.key_binds = dict(self.new_key_binds)
+			self.open_options() 
 
 		
 		menu_width = self.screen.get_width() * 2/3
@@ -3375,6 +3402,7 @@ def try_init_key_rebind(self):
 			keyname_1 = pygame.key.name(key1) if key1 else "Unbound"
 			keyname_2 = pygame.key.name(key2) if key2 else "Unbound"
 
+
 			self.key_rebind_menu_main_rows.append(
 				Modred.make_multirow(
 					Modred.row_from_text(name+":", self.font, self.linesize, selectable=False, width=col_widths[0]),
@@ -3382,12 +3410,13 @@ def try_init_key_rebind(self):
 					Modred.row_from_text(keyname_2+(' '*(10-len(keyname_2))), self.font, self.linesize, selectable=True, on_confirm_callback=make_callback_for_key_rebind(key_bind, False), width=col_widths[2]),
 				)
 			)
+			rows_by_keybind[key_bind] = self.key_rebind_menu_main_rows[-1]
 		
 		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
 		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
-		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Reset to Default", self.font, self.linesize, selectable=True, width=menu_width))
-		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Reset to Multiplayer Default", self.font, self.linesize, selectable=True, width=menu_width))
-		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Done", self.font, self.linesize, selectable=True, width=menu_width))
+		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Reset to Default", self.font, self.linesize, selectable=True, on_confirm_callback=reset_keybinds_to_default, width=menu_width))
+		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Reset to Multiplayer Default", self.font, self.linesize, selectable=True, on_confirm_callback=reset_keybinds_to_multiplayer_default, width=menu_width))
+		self.key_rebind_menu_main_rows.append(Modred.row_from_text("Done", self.font, self.linesize, selectable=True, on_confirm_callback=leave_key_rebind_screen, width=menu_width))
 		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
 		self.key_rebind_menu_main_rows.append(Modred.row_from_size(menu_width, self.linesize)) # blank space
 
@@ -3433,7 +3462,7 @@ def process_key_rebind(self):
 				self.rebinding = False
 
 				rebind_page = self.key_rebind_menu.pages[0]
-				rebind_page.rows[rebind_page.selected_row_index].subrows[rebind_page.selected_subrow_index].set_text(pygame.key.name(key) if key else "Unbound")
+				rebind_page.rows[rebind_page.selected_row_index].subrows[self.rebinding_key[1]+1].set_text(pygame.key.name(key) if key else "Unbound")
 	else:
 		for evt in self.events:
 			if evt.type == pygame.KEYDOWN:
