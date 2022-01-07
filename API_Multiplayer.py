@@ -2351,8 +2351,11 @@ def unified_process_input(self):
 	movedir_pOther = None
 	for evt in self.events:
 		if self.in_multiplayer_mode:
-			movedir_pMain = handle_any_event(self, evt, p1_key_binds_map, self.main_player)
-			movedir_pOther = handle_any_event(self, evt, p2_key_binds_map, self.other_player)
+			new_movedir_pMain = handle_any_event(self, evt, p1_key_binds_map, self.main_player)
+			new_movedir_pOther = handle_any_event(self, evt, p2_key_binds_map, self.other_player)
+
+			movedir_pMain = new_movedir_pMain if new_movedir_pMain != None else movedir_pMain
+			movedir_pOther = new_movedir_pOther if new_movedir_pOther != None else movedir_pOther
 		else:
 			movedir_pMain = handle_any_event(self, evt, p1_key_binds_map, self.main_player)
 			
@@ -2619,9 +2622,15 @@ def autopickup(self):
 # RiftWizard.PyGameView.autopickup = autopickup
 
 
+import traceback ## TODO: debug line, remove later
 def handle_event_level(self, evt, key_binds_map, player):
 	if not evt.type == pygame.KEYDOWN:
 		return
+
+	print("HANDLE EVENT LEVEL GOT KEY: " + pygame.key.name(evt.key))
+# TODO: next check - game crash on deploy when p1 dead
+	traceback.print_stack()
+
 
 	# Cancel path on key down
 	# do this here instead of by checking pressed keys to deal with pygame alt tab bug
@@ -2785,6 +2794,7 @@ def handle_event_level(self, evt, key_binds_map, player):
 		# if evt.key in self.key_binds[KEY_BIND_MESSAGE_LOG]:
 		# 	self.open_combat_log()
 
+	print(movedir)
 	if movedir:
 		return movedir
 
@@ -2793,6 +2803,8 @@ def handle_move_dir(self, movedir, player, other_player, force_no_repeats=False)
 	if movedir == None: 
 		return
 
+	print('HANDLING MOVE DIR:')
+	print(movedir)
 	keys = pygame.key.get_pressed()
 
 	if movedir:
