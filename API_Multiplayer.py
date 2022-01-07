@@ -3435,7 +3435,17 @@ def process_key_rebind(self):
 				rebind_page = self.key_rebind_menu.pages[0]
 				rebind_page.rows[rebind_page.selected_row_index].subrows[rebind_page.selected_subrow_index].set_text(pygame.key.name(key) if key else "Unbound")
 	else:
-		# pygameview, up_keys, down_keys, left_keys, right_keys, confirm_keys
+		for evt in self.events:
+			if evt.type == pygame.KEYDOWN:
+				if evt.key in self.key_binds[RiftWizard.KEY_BIND_ABORT]:
+					self.play_sound("menu_confirm")
+					self.key_binds = dict(self.new_key_binds)
+					self.open_options() 
+			if evt.type == pygame.MOUSEBUTTONDOWN:
+				if evt.button == pygame.BUTTON_RIGHT:
+					self.play_sound("menu_abort")
+					self.open_options()
+		
 		self.key_rebind_menu.process_input(self, self.key_binds[RiftWizard.KEY_BIND_UP], self.key_binds[RiftWizard.KEY_BIND_DOWN], self.key_binds[RiftWizard.KEY_BIND_LEFT], self.key_binds[RiftWizard.KEY_BIND_RIGHT], self.key_binds[RiftWizard.KEY_BIND_CONFIRM])
 
 # RiftWizard.PyGameView.process_key_rebind = process_key_rebind
