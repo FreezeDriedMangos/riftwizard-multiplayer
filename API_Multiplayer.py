@@ -1546,7 +1546,7 @@ def handle_cast_selection(self, evt, key_binds_map, player):
 
 
 	# if event is one of the number keys or the chat key (and we're in online multiplayer mode) exit cast select state and pass the event to handle_event_level
-	instantly_exit_to_state_level = True #False
+	instantly_exit_to_state_level = False
 	if KEY_BIND_OPEN_CHAT in self.key_binds and evt.key in self.key_binds[KEY_BIND_OPEN_CHAT]:
 		instantly_exit_to_state_level = True
 	for bind in range(key_binds_map[RiftWizard.KEY_BIND_SPELL_1], key_binds_map[RiftWizard.KEY_BIND_SPELL_10]+1):
@@ -2115,6 +2115,9 @@ def handle_event_chat(self, evt, key_binds_map, player):
 
 
 def handle_any_event(self, evt, key_binds_map, player):
+	if evt.type == pygame.KEYDOWN:
+		print("HANDLE ANY EVENT GOT KEY: " + pygame.key.name(evt.key))
+
 	if player.menu__state == RiftWizard.STATE_LEVEL:
 		if self.online_mode and self.chat_open:
 			return handle_event_chat(self, evt, key_binds_map, player)
@@ -3301,6 +3304,8 @@ def draw_single_char_sheet(self, character_display, player):
 
 	character_display.fill((0, 0, 0))
 	self.draw_panel(character_display)
+	# make the borders of the menu green to indicate the player's movement keys will affect this menu, not the playspace
+	character_display.fill((100, 255, 100, 90), special_flags=pygame.BLEND_RGBA_MULT)
 
 	# Spells
 	spell_x_offset = self.border_margin # + 18
@@ -3743,6 +3748,9 @@ def draw_single_character(self, character_display, player, key_binds_map):
 	# if player_should_indicate_waiting(self, player):
 	#   draw panel with greys
 	self.draw_panel(character_display)
+	if player.menu__state == STATE_CAST_SELECTION:
+		# make the borders of the menu green if the player's in cast select state
+		character_display.fill((100, 255, 100, 90), special_flags=pygame.BLEND_RGBA_MULT)
 	
 	self.char_panel_examine_lines = {}
 
