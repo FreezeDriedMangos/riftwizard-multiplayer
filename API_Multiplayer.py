@@ -3001,7 +3001,8 @@ def try_deploy(self, x, y, x2=None, y2=None):
 	if self.p2.cur_hp > 0:
 		self.cur_level.remove_obj(self.p2)
 		self.next_level.start_pos = Point(x2, y2)
-		self.next_level.spawn_player(self.p2)
+		# self.next_level.spawn_player(self.p2)
+		spawn_p2(self.next_level, self.p2)
 	self.next_level.player_unit_2 = self.p2
 
 
