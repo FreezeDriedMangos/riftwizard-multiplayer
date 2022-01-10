@@ -1219,8 +1219,8 @@ default_key_binds_multiplayer_scheme = {	 # TODO: Set these default values -----
 	RiftWizard.KEY_BIND_MESSAGE_LOG : [None, None],            # [pygame.K_m, None],
 	RiftWizard.KEY_BIND_THREAT : [None, None],      # [pygame.K_t, None],
 	RiftWizard.KEY_BIND_LOS : [None, None],    # [pygame.K_l, None],
-	KEY_BIND_PREV_EXAMINE_TARGET: [pygame.K_PAGEUP, None],
-	KEY_BIND_NEXT_EXAMINE_TARGET: [pygame.K_PAGEDOWN, None],
+	RiftWizard.KEY_BIND_PREV_EXAMINE_TARGET: [pygame.K_PAGEUP, None],
+	RiftWizard.KEY_BIND_NEXT_EXAMINE_TARGET: [pygame.K_PAGEDOWN, None],
 	KEY_BIND_TOGGLE_SPELL_SELECT : [pygame.K_f, None],
 
 	KEY_BIND_UP_P2 : [pygame.K_o, None],   # [pygame.K_UP, pygame.K_KP8],
@@ -3615,6 +3615,9 @@ def draw_shop(self, character_display=None, player=None):
 	self.shop_rects = []
 	character_display.fill((0, 0, 0))
 	self.draw_panel(character_display)
+	# make the borders of the menu green to indicate the player's movement keys will affect this menu, not the playspace
+	character_display.fill((100, 255, 100, 90), special_flags=pygame.BLEND_RGBA_MULT)
+	
 	
 	# Draw Shrine Background
 	if player.menu__shop_type == RiftWizard.SHOP_TYPE_SHOP:
