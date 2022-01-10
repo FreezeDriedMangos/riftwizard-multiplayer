@@ -63,8 +63,6 @@ import mods.API_Multiplayer.Chat as Chat
 
 
 # TODO: make SP distribution non-dispellable
-# TODO: add an option for "mana potions restore charges on both players"
-# TODO: fix game crash - deploy when p1 dead
 
 
 # Latest Release: 
@@ -2361,7 +2359,8 @@ def unified_process_input(self):
 			movedir_pMain = new_movedir_pMain if new_movedir_pMain != None else movedir_pMain
 			movedir_pOther = new_movedir_pOther if new_movedir_pOther != None else movedir_pOther
 		else:
-			movedir_pMain = handle_any_event(self, evt, p1_key_binds_map, self.main_player)
+			new_movedir_pMain = handle_any_event(self, evt, p1_key_binds_map, self.main_player)
+			movedir_pMain = new_movedir_pMain if new_movedir_pMain != None else movedir_pMain
 			
 
 	if self.in_multiplayer_mode:
@@ -4075,9 +4074,9 @@ def Level_iter_frame(self, mark_turn_end=False):
 		if any(u.team != TEAM_PLAYER for u in self.units):
 			self.next_log_turn()
 			self.combat_log.debug("Level %d, Turn %d begins." % (self.level_no, self.turn_no))
-			RiftWizard.turn_mode = RiftWizard.turn_mode_from_settings
+			turn_mode = RiftWizard.turn_mode_from_settings
 		else:
-			RiftWizard.turn_mode = TURN_MODE_ONE_PLAYER_AT_A_TIME
+			turn_mode = TURN_MODE_ONE_PLAYER_AT_A_TIME
 
 
 		# Cache unit list here to enforce summoning delay
@@ -4130,9 +4129,9 @@ def Level_iter_frame(self, mark_turn_end=False):
 				for unit in units:
 					yield from unit_turn(self, unit)
 				
-				if not allow_turn_queuing(self, p1, p1.requested_action, RiftWizard.turn_mode):
+				if not allow_turn_queuing(self, p1, p1.requested_action, turn_mode):
 					p1.requested_action = None
-				if p2 and not allow_turn_queuing(self, p2, p2.requested_action, RiftWizard.turn_mode):
+				if p2 and not allow_turn_queuing(self, p2, p2.requested_action, turn_mode):
 					p2.requested_action = None
 					
 
