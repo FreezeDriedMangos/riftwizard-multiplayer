@@ -2177,7 +2177,7 @@ def handle_mouse_level(self):
 			if level_point:	
 				if self.main_player.cur_spell:
 					self.main_player.cur_spell_target = level_point
-				if self.game.deploying:
+				if self.game.deploying and not self.online_mode:
 					self.main_player.menu__deploy_target = level_point
 					self.deploy_target = level_point
 
