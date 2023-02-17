@@ -1,2 +1,2 @@
-I included RiftWizard.py, Level.py, and Game.py from the version of the source this mod was built for.
+I included RiftWizard.py, Level.py, and Game.py from the version of the source this mod was built for. 
 Use the difference betewen it and the latest RiftWizard.py/Game.py/Level.py to help you update the mod if it breaks.
